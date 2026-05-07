@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         VJudge 洛谷验证码自动填写
 // @namespace    https://github.com/GG-hmg/vjudge-captcha-autofill
-// @version      0.1.0
+// @version      0.2.0
 // @description  自动识别并填写 vjudge.net 的洛谷验证码（互助页面），使用 CNN 远程 OCR 服务
 // @match        *://vjudge.net/util/luogu/captcha*
 // @icon         https://vjudge.net/favicon.ico
@@ -18,7 +18,22 @@
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
 
+  function showStatus(msg, type) {
+    let el = document.querySelector("#vj-captcha-status");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "vj-captcha-status";
+      el.style.cssText = "text-align:center;margin:8px 0;font-size:14px;";
+      const form = document.querySelector("#captcha_form");
+      if (form) form.prepend(el);
+    }
+    el.textContent = msg;
+    el.style.color = type === "ok" ? "#28a745" : type === "err" ? "#dc3545" : "#6c757d";
+  }
+
   function recognize(img, callback) {
+    showStatus("识别中...", "info");
+
     canvas.width = img.naturalWidth;
     canvas.height = img.naturalHeight;
     ctx.drawImage(img, 0, 0);
@@ -29,6 +44,7 @@
       url: OCR_SERVER,
       headers: { "Content-Type": "application/json" },
       data: JSON.stringify({ image: data }),
+      timeout: 5000,
       onload: (resp) => {
         try {
           const { prediction } = JSON.parse(resp.responseText);
@@ -42,69 +58,71 @@
         console.error("[vj-captcha] OCR 请求失败:", err);
         callback("");
       },
-      timeout: 5000,
     });
   }
 
-  function fillAndSubmit(text) {
-    if (!text) {
-      console.warn("[vj-captcha] 识别结果为空，跳过填写");
-      return;
-    }
-
+  function fillInput(text) {
     const input = document.querySelector('input[name="captcha_code"]');
     if (!input) {
       console.warn("[vj-captcha] 未找到验证码输入框");
+      showStatus("未找到输入框", "err");
+      return;
+    }
+
+    if (!text) {
+      showStatus("识别失败，请手动输入", "err");
       return;
     }
 
     input.value = text;
     input.dispatchEvent(new Event("input", { bubbles: true }));
     input.dispatchEvent(new Event("change", { bubbles: true }));
+    input.style.border = "2px solid #28a745";
+    input.style.boxShadow = "0 0 4px #28a745";
 
+    showStatus("已填写: " + text + "（请确认后手动提交）", "ok");
     console.log("[vj-captcha] 验证码已填写:", text);
-
-    // 自动提交表单
-    setTimeout(() => {
-      const form = document.querySelector("#captcha_form");
-      if (form) {
-        form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
-        console.log("[vj-captcha] 表单已自动提交");
-      }
-    }, 500);
   }
 
   function handleImage(img) {
     if (img.complete && img.naturalWidth > 0) {
-      recognize(img, fillAndSubmit);
+      recognize(img, fillInput);
     } else {
-      img.addEventListener("load", () => recognize(img, fillAndSubmit), { once: true });
+      img.addEventListener("load", () => recognize(img, fillInput), { once: true });
     }
   }
 
-  // 监听 #captcha_img 的 src 属性变化（页面通过 JS 动态加载验证码图片）
-  const captchaImg = document.querySelector("#captcha_img");
-  if (!captchaImg) {
-    console.warn("[vj-captcha] 未找到 #captcha_img 元素");
-    return;
-  }
+  function init() {
+    const captchaImg = document.querySelector("#captcha_img");
+    if (!captchaImg) {
+      console.warn("[vj-captcha] 未找到 #captcha_img，1 秒后重试");
+      setTimeout(init, 1000);
+      return;
+    }
 
-  const attrObserver = new MutationObserver((mutations) => {
-    for (const m of mutations) {
-      if (m.type === "attributes" && m.attributeName === "src") {
-        const src = captchaImg.getAttribute("src");
-        if (src && src !== "#" && !src.startsWith("data:image/svg")) {
-          handleImage(captchaImg);
+    // 监听 src 属性变化
+    const attrObserver = new MutationObserver((mutations) => {
+      for (const m of mutations) {
+        if (m.type === "attributes" && m.attributeName === "src") {
+          const src = captchaImg.getAttribute("src");
+          if (src && src !== "#" && !src.startsWith("data:image/svg")) {
+            handleImage(captchaImg);
+          }
         }
       }
+    });
+    attrObserver.observe(captchaImg, { attributes: true, attributeFilter: ["src"] });
+
+    // 处理已经加载的图片
+    const src = captchaImg.getAttribute("src");
+    if (src && src !== "#" && captchaImg.complete) {
+      handleImage(captchaImg);
     }
-  });
+  }
 
-  attrObserver.observe(captchaImg, { attributes: true, attributeFilter: ["src"] });
-
-  // 页面初次加载时如果已有有效的 src 则直接处理
-  const initialSrc = captchaImg.getAttribute("src");
-  if (initialSrc && initialSrc !== "#" && captchaImg.complete) {
-    handleImage(captchaImg);
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
   }
 })();
