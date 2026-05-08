@@ -23,6 +23,8 @@
 - **Luogu 提交页面**：提交题目时弹出验证码，脚本自动识别并填写
 
 > 注意：CNN 识别并非 100% 准确，如果填错了请手动修正后提交。
+> 
+> 从提交题目流程正常进入时识别很快；如果交过一次后刷新页面想多次提交，或者直接访问网址，验证码图片可能加载较慢，耐心等待即可，不影响使用。
 
 ### 原理
 
@@ -57,6 +59,8 @@ A Tampermonkey userscript that auto-solves Luogu CAPTCHAs using CNN-based OCR, s
 - **Luogu page**: CAPTCHA prompts appear during problem submission — auto-recognized and filled
 
 > Note: CNN recognition is not 100% accurate. Please manually correct if needed.
+>
+> The CAPTCHA image loads quickly when entering via the normal submission flow. If you refresh after submitting or visit the URL directly, the image may load slower — just wait a moment, it still works.
 
 ### How It Works
 
