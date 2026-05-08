@@ -24,7 +24,7 @@
 
 > 注意：CNN 识别并非 100% 准确，如果填错了请手动修正后提交。
 > 
-> 从提交题目流程正常进入时识别很快；如果交过一次后刷新页面想多次提交，或者直接访问网址，验证码图片可能加载较慢，耐心等待即可，不影响使用。
+> 从提交题目流程正常进入时识别很快；如果交过一次后刷新页面想多次提交，或者直接访问网址，验证码图片可能加载较慢，不影响使用。
 
 ### 原理
 
@@ -60,7 +60,7 @@ A Tampermonkey userscript that auto-solves Luogu CAPTCHAs using CNN-based OCR, s
 
 > Note: CNN recognition is not 100% accurate. Please manually correct if needed.
 >
-> The CAPTCHA image loads quickly when entering via the normal submission flow. If you refresh after submitting or visit the URL directly, the image may load slower — just wait a moment, it still works.
+> The CAPTCHA image loads quickly when entering via the normal submission flow. If you refresh after submitting or visit the URL directly, the image may load slower.
 
 ### How It Works
 
